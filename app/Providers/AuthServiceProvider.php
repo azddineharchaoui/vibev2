@@ -10,6 +10,7 @@ class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
         User::class => UserPolicy::class,
+        Post::class => PostPolicy::class,
     ];
 
     public function boot(): void
