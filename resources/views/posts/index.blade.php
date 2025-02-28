@@ -49,17 +49,21 @@
 
                     <div class="mt-6 pt-4 w-1/2 mx-auto border-t border-gray-100 flex items-center justify-between">
                         <div class="flex space-x-4 text-sm">
-                            <form action="{{ route('posts.like', $post->id) }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="flex items-center {{ $post->isLikedBy() ? 'text-blue-600' : 'text-gray-500 hover:text-blue-600' }} transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="{{ $post->isLikedBy() ? 'currentColor' : 'none' }}"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                                    </svg>
-                                    J'aime ({{ $post->likes->count() }})
-                                </button>
-                            </form>
+                            
+                            <button type="button" 
+                                class="flex items-center like-button text-gray-500 hover:text-blue-600 transition {{ $post->isLikedBy(Auth::id()) ? 'text-blue-600' : '' }}"
+                                data-post-id="{{ $post->id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" 
+                                    id="like-icon-{{ $post->id }}"
+                                    class="h-5 w-5 mr-1" 
+                                    fill="{{ $post->isLikedBy(Auth::id()) ? 'currentColor' : 'none' }}" 
+                                    viewBox="0 0 24 24" 
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                </svg>
+                                J'aime <span id="likes-count-{{ $post->id }}" class="ml-1">({{ $post->likes()->count() }})</span>
+                            </button>
                             <button class="flex items-center text-gray-500 hover:text-blue-600 transition" onclick="toggleComments{{ $post->id }}()">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
@@ -168,4 +172,51 @@
             </div>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sélectionne tous les boutons de like
+            const likeButtons = document.querySelectorAll('.like-button');
+            
+            likeButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const postId = this.getAttribute('data-post-id');
+                    const likeCountElement = document.getElementById(`likes-count-${postId}`);
+                    const likeIconElement = document.getElementById(`like-icon-${postId}`);
+                    
+                    // Requête AJAX
+                    fetch(`/posts/${postId}/like`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Mise à jour du compteur
+                            likeCountElement.textContent = data.likesCount;
+                            
+                            // Mise à jour de l'apparence du bouton
+                            if (data.isLiked) {
+                                this.classList.add('text-blue-600');
+                                this.classList.remove('text-gray-500');
+                                likeIconElement.setAttribute('fill', 'currentColor');
+                            } else {
+                                this.classList.remove('text-blue-600');
+                                this.classList.add('text-gray-500');
+                                likeIconElement.setAttribute('fill', 'none');
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Erreur:', error));
+                });
+            });
+        });
+
+    </script>
 </x-app-layout>

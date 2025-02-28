@@ -13,16 +13,25 @@ class LikeController extends Controller
     {
         $post = Post::findOrFail($postId);
         $like = Like::where('user_id', Auth::id())->where('post_id', $postId)->first();
+        $isLiked = false;
 
         if ($like) {
             $like->delete();
-            return back()->with('success', 'Like retiré avec succès.');
+            $message = 'Like retiré avec succès.';
         } else {
             Like::create([
                 'user_id' => Auth::id(),
                 'post_id' => $postId
             ]);
-            return back()->with('success', 'Post aimé avec succès.');
+            $isLiked = true;
+            $message = 'Post aimé avec succès.';
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'isLiked' => $isLiked,
+            'likesCount' => $post->likes()->count()
+        ]);
     }
 }
